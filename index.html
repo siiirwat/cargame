@@ -78,7 +78,6 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// ปรับขนาด canvas ให้เต็มหน้าจอมือถือ
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -86,12 +85,11 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-const laneWidth = canvas.width / 3;
+let laneWidth = canvas.width / 3;
 const carWidth = 40;
 const carHeight = 80;
-const obstacleWidth = 50;
+let obstacleWidth = laneWidth * 0.6;
 const obstacleHeight = 50;
-const minGap = carHeight * 2;
 
 let carLane = 1;
 let speed = 3;
@@ -100,17 +98,14 @@ let obstacles = [];
 let gameActive = false;
 let bgY = 0;
 
-// โหลดภาพ
 const carImg = new Image(); carImg.src = 'car.png';
 const bgImg = new Image(); bgImg.src = 'bg.png';
-
 const obstacleImgs = [new Image(), new Image(), new Image(), new Image()];
 obstacleImgs[0].src = 'br.png';
 obstacleImgs[1].src = 'tr.png';
 obstacleImgs[2].src = 'peple.png';
 obstacleImgs[3].src = 'bus.png';
 
-// เสียง (ไม่บังคับใส่ startSound)
 const gameSound = new Audio('game.mp3'); gameSound.loop = true;
 const gameOverSound = new Audio('gameover.mp3');
 
@@ -122,9 +117,25 @@ function drawBackground() {
   ctx.drawImage(bgImg, 0, bgY, canvas.width, canvas.height);
 }
 
+function drawLaneLines() {
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  const dashHeight = 20;
+
+  for (let i = 1; i <= 2; i++) {
+    const x = i * laneWidth;
+    for (let y = 0; y < canvas.height; y += dashHeight * 2) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + dashHeight);
+      ctx.stroke();
+    }
+  }
+}
+
 function drawCar() {
   const x = carLane * laneWidth + (laneWidth - carWidth) / 2;
-  const y = canvas.height - carHeight - 150;
+  const y = canvas.height - carHeight - 150; // ยกให้สูงจากขอบล่าง
   ctx.drawImage(carImg, x, y, carWidth, carHeight);
 }
 
@@ -136,20 +147,14 @@ function drawObstacles() {
 }
 
 function updateObstacles() {
-  // กำหนดค่าระยะห่างเริ่มต้นและต่ำสุด
-  const maxGap = 300;       // ระยะห่างสูงสุด (เริ่มเกม)
-  const minGapValue = 100;  // ระยะห่างต่ำสุด (เล่นนาน)
-  const gapDecreaseSpeed = 0.05; // ความเร็วลดระยะห่าง
-
-  // คำนวณ minGap โดยลดลงตาม score แต่ไม่ต่ำกว่า minGapValue
+  const maxGap = 350;
+  const minGapValue = 180;
+  const gapDecreaseSpeed = 0.03;
   const minGap = Math.max(minGapValue, maxGap - score * gapDecreaseSpeed);
 
-  // เลื่อนสิ่งกีดขวางลงตามความเร็ว
   obstacles.forEach(ob => ob.y += speed);
 
-  // เพิ่มสิ่งกีดขวางใหม่เมื่อเลื่อนลงมาเกิน 150 หรือยังไม่มีสิ่งกีดขวาง
   if (obstacles.length === 0 || obstacles[obstacles.length - 1].y > 150) {
-    // หาเลนที่มีระยะห่างพอให้เพิ่มสิ่งกีดขวางใหม่
     const possibleLanes = [0, 1, 2].filter(lane =>
       !obstacles.some(ob => ob.lane === lane && (canvas.height - ob.y - obstacleHeight) < minGap)
     );
@@ -161,14 +166,19 @@ function updateObstacles() {
     }
   }
 
-  // กรองเอาสิ่งกีดขวางที่ยังอยู่ในหน้าจอ
   obstacles = obstacles.filter(ob => ob.y < canvas.height);
 }
 
 function checkCollision() {
-  const carY = canvas.height - carHeight - 10;
+  const carY = canvas.height - carHeight - 150;
+  const buffer = 10; // ระยะปลอดภัย
+
   for (let ob of obstacles) {
-    if (ob.lane === carLane && ob.y + obstacleHeight > carY && ob.y < canvas.height - 10) {
+    if (
+      ob.lane === carLane &&
+      ob.y + obstacleHeight - buffer > carY &&
+      ob.y + buffer < carY + carHeight
+    ) {
       endGame();
     }
   }
@@ -177,6 +187,7 @@ function checkCollision() {
 function gameLoop() {
   if (!gameActive) return;
   drawBackground();
+  drawLaneLines();
   drawCar();
   drawObstacles();
   updateObstacles();
@@ -192,6 +203,8 @@ function gameLoop() {
 }
 
 function startGame() {
+  laneWidth = canvas.width / 3;
+  obstacleWidth = laneWidth * 0.6;
   gameSound.currentTime = 0;
   gameSound.play();
   document.getElementById('startScreen').style.display = 'none';
@@ -214,14 +227,12 @@ function endGame() {
   document.getElementById('gameOverScreen').style.display = 'flex';
 }
 
-// ควบคุมด้วยปุ่มคีย์บอร์ด
 document.addEventListener('keydown', (e) => {
   if (!gameActive) return;
   if (e.key === 'ArrowLeft' && carLane > 0) carLane--;
   else if (e.key === 'ArrowRight' && carLane < 2) carLane++;
 });
 
-// ควบคุมด้วยการแตะหน้าจอ (มือถือ)
 canvas.addEventListener('touchstart', (e) => {
   if (!gameActive) return;
   const touchX = e.touches[0].clientX;
@@ -230,7 +241,6 @@ canvas.addEventListener('touchstart', (e) => {
   else if (touchX > 2 * third && carLane < 2) carLane++;
 });
 
-// เริ่มเกม / เริ่มใหม่
 document.getElementById('startButton').addEventListener('click', startGame);
 document.getElementById('restartButton').addEventListener('click', startGame);
 </script>
