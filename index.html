@@ -136,17 +136,32 @@ function drawObstacles() {
 }
 
 function updateObstacles() {
+  // กำหนดค่าระยะห่างเริ่มต้นและต่ำสุด
+  const maxGap = 300;       // ระยะห่างสูงสุด (เริ่มเกม)
+  const minGapValue = 100;  // ระยะห่างต่ำสุด (เล่นนาน)
+  const gapDecreaseSpeed = 0.05; // ความเร็วลดระยะห่าง
+
+  // คำนวณ minGap โดยลดลงตาม score แต่ไม่ต่ำกว่า minGapValue
+  const minGap = Math.max(minGapValue, maxGap - score * gapDecreaseSpeed);
+
+  // เลื่อนสิ่งกีดขวางลงตามความเร็ว
   obstacles.forEach(ob => ob.y += speed);
+
+  // เพิ่มสิ่งกีดขวางใหม่เมื่อเลื่อนลงมาเกิน 150 หรือยังไม่มีสิ่งกีดขวาง
   if (obstacles.length === 0 || obstacles[obstacles.length - 1].y > 150) {
+    // หาเลนที่มีระยะห่างพอให้เพิ่มสิ่งกีดขวางใหม่
     const possibleLanes = [0, 1, 2].filter(lane =>
       !obstacles.some(ob => ob.lane === lane && (canvas.height - ob.y - obstacleHeight) < minGap)
     );
+
     if (possibleLanes.length > 0) {
       const lane = possibleLanes[Math.floor(Math.random() * possibleLanes.length)];
       const img = obstacleImgs[Math.floor(Math.random() * obstacleImgs.length)];
       obstacles.push({ lane, y: -obstacleHeight, img });
     }
   }
+
+  // กรองเอาสิ่งกีดขวางที่ยังอยู่ในหน้าจอ
   obstacles = obstacles.filter(ob => ob.y < canvas.height);
 }
 
