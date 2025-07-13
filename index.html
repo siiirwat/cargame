@@ -88,11 +88,11 @@ resizeCanvas();
 let laneWidth = canvas.width / 3;
 const carWidth = 40;
 const carHeight = 80;
-let obstacleWidth = laneWidth * 0.6;
+let obstacleWidth = laneWidth * 0.5;
 const obstacleHeight = 50;
 
 let carLane = 1;
-let speed = 3;
+let speed = 2; // ✅ ความเร็วเริ่มต้นลดลง
 let score = 0;
 let obstacles = [];
 let gameActive = false;
@@ -135,7 +135,7 @@ function drawLaneLines() {
 
 function drawCar() {
   const x = carLane * laneWidth + (laneWidth - carWidth) / 2;
-  const y = canvas.height - carHeight - 150; // ยกให้สูงจากขอบล่าง
+  const y = canvas.height - carHeight - 150;
   ctx.drawImage(carImg, x, y, carWidth, carHeight);
 }
 
@@ -147,9 +147,9 @@ function drawObstacles() {
 }
 
 function updateObstacles() {
-  const maxGap = 350;
-  const minGapValue = 180;
-  const gapDecreaseSpeed = 0.03;
+  const maxGap = 400;
+  const minGapValue = 250;
+  const gapDecreaseSpeed = 0.015;
   const minGap = Math.max(minGapValue, maxGap - score * gapDecreaseSpeed);
 
   obstacles.forEach(ob => ob.y += speed);
@@ -171,7 +171,7 @@ function updateObstacles() {
 
 function checkCollision() {
   const carY = canvas.height - carHeight - 150;
-  const buffer = 10; // ระยะปลอดภัย
+  const buffer = 15; // ✅ เพิ่มระยะชนปลอดภัย
 
   for (let ob of obstacles) {
     if (
@@ -197,21 +197,23 @@ function gameLoop() {
   if (score % 60 === 0) {
     document.getElementById('timerDisplay').innerText = 'Time: ' + Math.floor(score / 60) + ' sec';
   }
-  if (score % 500 === 0) speed *= 1.1;
+
+  // ✅ เพิ่มความเร็วช้าลง
+  if (score % 500 === 0) speed *= 1.05;
 
   requestAnimationFrame(gameLoop);
 }
 
 function startGame() {
   laneWidth = canvas.width / 3;
-  obstacleWidth = laneWidth * 0.6;
+  obstacleWidth = laneWidth * 0.5;
   gameSound.currentTime = 0;
   gameSound.play();
   document.getElementById('startScreen').style.display = 'none';
   document.getElementById('gameOverScreen').style.display = 'none';
   document.getElementById('timerDisplay').innerText = 'Time: 0 sec';
   carLane = 1;
-  speed = 3;
+  speed = 2;
   score = 0;
   obstacles = [];
   bgY = 0;
